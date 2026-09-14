@@ -1,0 +1,2 @@
+ok - automatic planned transfer reserves, stays exclusive, refuses races, and restarts on failure
+bash tests/$t.test.sh  19.90s user 10.86s system 66% cpu 46.071 total

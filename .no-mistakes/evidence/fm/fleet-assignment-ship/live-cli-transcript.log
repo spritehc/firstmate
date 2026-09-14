@@ -1,0 +1,59 @@
+registered semantic owner harness
+registered semantic owner racer
+
+### S1 unknown project fails closed into unassigned triage
+$ bin/fm-fleet.sh route --project mystery --issue MIX-1
+{"claims": {}, "state": "unassigned", "triage": {"attempts": 1, "first_seen_at": "2026-09-14T05:39:43Z", "issue": "MIX-1", "key": "issue:MIX-1|project:mystery", "last_seen_at": "2026-09-14T05:39:43Z", "project": "mystery", "reason": "unowned semantic routing key: project"}}
+[exit 3]
+
+### S2 new AutoDev issue routes to an automatically chosen manager (no manager input)
+$ bin/fm-fleet.sh route --project AutoDev --issue MIX-2
+--project AutoDev --issue MIX-2 -> harness -> manager-1 (generation 1)
+[exit 0]
+$ bin/fm-fleet.sh route --project dotcodex --issue MIX-3
+--project dotcodex --issue MIX-3 -> harness -> manager-1 (generation 1)
+[exit 0]
+
+### S3 in-flight transfer: route and healthy sticky assign both report transfer-in-progress, exit 4, no registry write
+$ bin/fm-fleet.sh route --project AutoDev --issue MIX-4
+{"by": ["project"], "secondmate": "harness", "state": "transfer-in-progress", "transaction": "live-tx"}
+[exit 4]
+$ bin/fm-fleet.sh assign --secondmate harness
+{"secondmate": "harness", "state": "transfer-in-progress", "transaction": "live-tx"}
+[exit 4]
+fleet.json checksum before=14f5d3221191 after=14f5d3221191
+
+### S4 transfer reserved during health collection (barrier via python3 shim): route exits 4, no assignment/triage
+$ bin/fm-fleet.sh route --project race-app --issue MIX-9
+[barrier] transfer race-racer reserved during health collection
+{"secondmate": "racer", "state": "transfer-in-progress", "transaction": "race-racer"}
+[exit 4]
+racer assignments: [] | race triage: []
+
+### S5 controlled failover: manager-1 dies, recover moves harness to another manager, route follows
+/Users/cheng_huang/.no-mistakes/evidence/01M2F5D0GMVQF68DFHP5BAZY8E/live-cli-drive.sh: line 8: 33421 Terminated: 15          bash -c 'exec -a /opt/homebrew/bin/codex sleep 300'
+$ bin/fm-fleet.sh recover --secondmate harness
+auto transfer: harness -> manager-2 (transaction 20260914T053946Z-harness-33885)
+hook stop-secondmate harness
+hook start-secondmate harness
+transfer 20260914T053946Z-harness-33885 active: harness -> manager-2
+[exit 0]
+$ bin/fm-fleet.sh route --project AutoDev --issue MIX-5
+--project AutoDev --issue MIX-5 -> harness -> manager-2 (generation 2)
+[exit 0]
+active harness rows: [('manager-2', 2)] | in-flight transfers: [{'destination_manager': 'manager-3', 'failover': False, 'secondmate': 'racer', 'state': 'preparing', 'transaction': 'race-racer'}]
+$ bin/fm-fleet.sh status
+MANAGER   STATE          SMS   ASSIGNED                 LAST-PROGRESS        DETAIL
+manager-1 ready          0     -                        -                    -
+manager-2 idle           1     harness                  -                    agent
+manager-3 idle           0     -                        -                    agent
+
+SEMANTIC OWNERS
+harness projects=AutoDev,dotcodex domains=harness
+racer projects=race-app domains=race
+
+UNASSIGNED TRIAGE
+issue:MIX-1|project:mystery attempts=1 reason=unowned semantic routing key: project
+[exit 0]
+/Users/cheng_huang/.no-mistakes/evidence/01M2F5D0GMVQF68DFHP5BAZY8E/live-cli-drive.sh: line 61: 33430 Terminated: 15          bash -c 'exec -a /opt/homebrew/bin/codex sleep 300'
+/Users/cheng_huang/.no-mistakes/evidence/01M2F5D0GMVQF68DFHP5BAZY8E/live-cli-drive.sh: line 61: 33439 Terminated: 15          bash -c 'exec -a /opt/homebrew/bin/codex sleep 300'

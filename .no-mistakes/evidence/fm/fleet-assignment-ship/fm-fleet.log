@@ -1,0 +1,2 @@
+ok - fleet schema-v2 assignment and transfer control plane
+bash tests/$t.test.sh  12.03s user 6.61s system 49% cpu 37.276 total
